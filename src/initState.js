@@ -19,8 +19,22 @@ export function initState(vm) {
 }
 function initData(vm) {
     let data = vm.$options.data;
-    data = typeof data === 'function' ? data.call(vm) : data;
+    data = vm._data = typeof data === 'function' ? data.call(vm) : data;
+ 
     observer(data)
+    for(let key in data){
+      proxy(vm,'_data',key)
+    }
+}
+function proxy(vm,source,key){
+  Object.defineProperty(vm,key,{
+    get(){
+      return vm[source][key]
+    },
+    set(newValue){
+      vm[source][key] = newValue
+    }
+  })
 }
 function initProps() {
 
