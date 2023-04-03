@@ -8,22 +8,29 @@ const attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s
 const startTagClose = /^\s*(\/?)>/; // 匹配标签结束的 >
 const defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g // {{}}
 
-function start(){
-
+function start(tag,attrs){
+  console.log(tag,attrs,'开始的标签')
 }
 
 function charts(text){
-
+  console.log(text,'文本')
 }
-function end(){
-
+function end(tag){
+  console.log(tag,'结束标签')
 }
 function parseHTML(html){
   while(html){
     let textEnd = html.indexOf('<')
     if(textEnd === 0){
-      const startTagMatch = parseStartTag()
-      continue
+      let endTagMatch = html.match(endTag)
+      console.log(endTagMatch)
+      if(endTagMatch){
+        
+      } else{
+        const startTagMatch = parseStartTag()
+        start(startTagMatch.tagName,startTagMatch.attrs)
+        continue
+      }
     }
     let text
     if(textEnd >0){
@@ -31,6 +38,7 @@ function parseHTML(html){
     }  
     if(text){
       advance(text.length)
+      charts(text)
     }
     break
   }
@@ -52,13 +60,11 @@ function parseHTML(html){
     }
     if(end){
       advance(end[0].length)
-      console.log(match)
       return match
     }
   }
   function advance(n){
     html = html.substring(n)
-    console.log(html)
   }
 }
 export function compilrToFunction(el){

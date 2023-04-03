@@ -169,15 +169,28 @@
   var ncname = "[a-zA-Z_][\\-\\.0-9_a-zA-Z]*"; // 标签名称
   var qnameCapture = "((?:".concat(ncname, "\\:)?").concat(ncname, ")"); //<span:xx>
   var startTagOpen = new RegExp("^<".concat(qnameCapture)); // 标签开头的正则 捕获的内容是标签名
+  var endTag = new RegExp("^<\\/".concat(qnameCapture, "[^>]*>")); // 匹配标签结尾的 </div>
   var attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/; // 匹配属性的
   //<div id="app"></div>
   var startTagClose = /^\s*(\/?)>/; // 匹配标签结束的 >
+
+  function start(tag, attrs) {
+    console.log(tag, attrs, '开始的标签');
+  }
+  function charts(text) {
+    console.log(text, '文本');
+  }
   function parseHTML(html) {
     while (html) {
       var textEnd = html.indexOf('<');
       if (textEnd === 0) {
-        parseStartTag();
-        continue;
+        var endTagMatch = html.match(endTag);
+        console.log(endTagMatch);
+        if (endTagMatch) ; else {
+          var startTagMatch = parseStartTag();
+          start(startTagMatch.tagName, startTagMatch.attrs);
+          continue;
+        }
       }
       var text = void 0;
       if (textEnd > 0) {
@@ -185,6 +198,7 @@
       }
       if (text) {
         advance(text.length);
+        charts(text);
       }
       break;
     }
@@ -206,13 +220,11 @@
       }
       if (end) {
         advance(end[0].length);
-        console.log(match);
         return match;
       }
     }
     function advance(n) {
       html = html.substring(n);
-      console.log(html);
     }
   }
   function compilrToFunction(el) {
