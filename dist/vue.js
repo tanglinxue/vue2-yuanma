@@ -166,11 +166,82 @@
     });
   }
 
+  var ncname = "[a-zA-Z_][\\-\\.0-9_a-zA-Z]*"; // 标签名称
+  var qnameCapture = "((?:".concat(ncname, "\\:)?").concat(ncname, ")"); //<span:xx>
+  var startTagOpen = new RegExp("^<".concat(qnameCapture)); // 标签开头的正则 捕获的内容是标签名
+  var attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/; // 匹配属性的
+  //<div id="app"></div>
+  var startTagClose = /^\s*(\/?)>/; // 匹配标签结束的 >
+  function parseHTML(html) {
+    while (html) {
+      var textEnd = html.indexOf('<');
+      if (textEnd === 0) {
+        parseStartTag();
+        continue;
+      }
+      var text = void 0;
+      if (textEnd > 0) {
+        text = html.substring(0, textEnd);
+      }
+      if (text) {
+        advance(text.length);
+      }
+      break;
+    }
+    function parseStartTag() {
+      var start = html.match(startTagOpen);
+      var match = {
+        tagName: start[1],
+        attrs: []
+      };
+      advance(start[0].length);
+      var attr;
+      var end;
+      while (!(end = html.match(startTagClose)) && (attr = html.match(attribute))) {
+        match.attrs.push({
+          name: attr[1],
+          value: attr[3] || attr[4] || attr[5]
+        });
+        advance(attr[0].length);
+      }
+      if (end) {
+        advance(end[0].length);
+        console.log(match);
+        return match;
+      }
+    }
+    function advance(n) {
+      html = html.substring(n);
+      console.log(html);
+    }
+  }
+  function compilrToFunction(el) {
+    parseHTML(el);
+  }
+
   function initMixin(Vue) {
     Vue.prototype._init = function (options) {
       var vm = this;
       vm.$options = options;
       initState(vm);
+      if (vm.$options.el) {
+        vm.$mount(vm.$options.el);
+      }
+    };
+    Vue.prototype.$mount = function (el) {
+      var vm = this;
+      el = document.querySelector(el); //获取元素
+      var options = vm.$options;
+      if (!options.render) {
+        //没有
+        var template = options.template;
+        if (!template && el) {
+          //获取html
+          el = el.outerHTML;
+          //变成ast语法树
+          compilrToFunction(el);
+        }
+      }
     };
   }
 
