@@ -174,21 +174,60 @@
   //<div id="app"></div>
   var startTagClose = /^\s*(\/?)>/; // 匹配标签结束的 >
 
+  function createASTElement(tag, attrs) {
+    return {
+      tag: tag,
+      attrs: attrs,
+      children: [],
+      type: 1,
+      parent: null
+    };
+  }
+  var root; //根元素
+  var createParent;
+  var stack = [];
   function start(tag, attrs) {
     console.log(tag, attrs, '开始的标签');
+    var element = createASTElement(tag, attrs);
+    if (!root) {
+      root = element;
+    }
+    createParent = element;
+    stack.push(element);
   }
   function charts(text) {
     console.log(text, '文本');
+    text = text.replace(/s/g, '');
+    if (text) {
+      createParent.children.push({
+        type: 3,
+        text: text
+      });
+    }
+  }
+  function end(tag) {
+    console.log(tag, '结束标签');
+    var element = stack.pop();
+    createParent = stack[stack.length - 1];
+    if (createParent) {
+      //元素的关闭
+      element.paren = createParent.tag;
+      createParent.children.push(element);
+    }
   }
   function parseHTML(html) {
     while (html) {
       var textEnd = html.indexOf('<');
       if (textEnd === 0) {
-        var endTagMatch = html.match(endTag);
-        console.log(endTagMatch);
-        if (endTagMatch) ; else {
-          var startTagMatch = parseStartTag();
+        var startTagMatch = parseStartTag();
+        if (startTagMatch) {
           start(startTagMatch.tagName, startTagMatch.attrs);
+          continue;
+        }
+        var endTagMatch = html.match(endTag);
+        if (endTagMatch) {
+          advance(endTagMatch[0].length);
+          end(endTagMatch[0]);
           continue;
         }
       }
@@ -200,10 +239,10 @@
         advance(text.length);
         charts(text);
       }
-      break;
     }
     function parseStartTag() {
       var start = html.match(startTagOpen);
+      if (!start) return;
       var match = {
         tagName: start[1],
         attrs: []
@@ -226,6 +265,8 @@
     function advance(n) {
       html = html.substring(n);
     }
+    console.log(root);
+    return root;
   }
   function compilrToFunction(el) {
     parseHTML(el);

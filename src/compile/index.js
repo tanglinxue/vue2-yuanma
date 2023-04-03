@@ -8,27 +8,63 @@ const attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s
 const startTagClose = /^\s*(\/?)>/; // 匹配标签结束的 >
 const defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g // {{}}
 
+
+function createASTElement(tag,attrs){
+  return {
+    tag,
+    attrs,
+    children:[],
+    type:1,
+    parent:null
+  }
+}
+
+let root;//根元素
+let createParent
+let stack = []
+
 function start(tag,attrs){
   console.log(tag,attrs,'开始的标签')
+  let element = createASTElement(tag,attrs)
+  if(!root){
+    root = element
+  }
+  createParent = element
+  stack.push(element)
 }
 
 function charts(text){
   console.log(text,'文本')
+  text = text.replace(/s/g,'')
+  if(text){
+    createParent.children.push({
+      type:3,
+      text
+    })
+  }
 }
 function end(tag){
   console.log(tag,'结束标签')
+  let element = stack.pop()
+  createParent = stack[stack.length-1];
+  if(createParent){//元素的关闭
+    element.paren = createParent.tag;
+    createParent.children.push(element)
+  }
 }
 function parseHTML(html){
   while(html){
     let textEnd = html.indexOf('<')
     if(textEnd === 0){
-      let endTagMatch = html.match(endTag)
-      console.log(endTagMatch)
-      if(endTagMatch){
-        
-      } else{
-        const startTagMatch = parseStartTag()
+      const startTagMatch = parseStartTag()
+      if(startTagMatch){
         start(startTagMatch.tagName,startTagMatch.attrs)
+        continue
+      } 
+      let endTagMatch = html.match(endTag)
+      if(endTagMatch){
+        advance(endTagMatch[0].length)
+        end(endTagMatch[0])
         continue
       }
     }
@@ -40,10 +76,10 @@ function parseHTML(html){
       advance(text.length)
       charts(text)
     }
-    break
   }
   function parseStartTag(){
     const start = html.match(startTagOpen)
+    if(!start) return 
     let match = {
       tagName:start[1],
       attrs:[]
@@ -66,6 +102,8 @@ function parseHTML(html){
   function advance(n){
     html = html.substring(n)
   }
+  console.log(root)
+  return root
 }
 export function compilrToFunction(el){
   let ast = parseHTML(el)
