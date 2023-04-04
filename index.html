@@ -9,7 +9,7 @@
 </head>
 
 <body>
-  <div id="app" style="color:red"> hello {{msg}}<h1>wfvdf</h1></div>
+  <div id="app" style="color:red;font-size:20px"> hello {{msg}}222{{msg}} <h2>张三</h2></div>
   <script src="dist/vue.js"></script>
   <script>
     //umd  Vue
@@ -33,6 +33,8 @@
       }
     })
     console.log(vm)
+    //vue初次渲染  =》先初始化数据 =》将模板进行编译=》变成render()=>生成虚拟节点=》变成真实DOM =>放到页面上
+    //vue 模板编译  template render el 注意：el(必须要有) render()  template
   </script>
 </body>
 
