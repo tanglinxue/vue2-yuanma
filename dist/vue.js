@@ -174,11 +174,9 @@
     observer(value);
     Object.defineProperty(data, key, {
       get: function get() {
-        console.log('获取的时候触发');
         return value;
       },
       set: function set(newValue) {
-        console.log('设置的时候触发');
         if (newValue === value) return;
         value = newValue;
         observer(value);
@@ -409,12 +407,39 @@
     return render;
   }
 
+  function patch(oldVnode, vnode) {
+    console.log(oldVnode);
+    console.log(vnode);
+    var el = createEl(vnode);
+    console.log(el);
+    var parentEl = oldVnode.parentNode;
+    parentEl.insertBefore(el, oldVnode.nextsibling);
+    parentEl.removeChild(oldVnode);
+  }
+  function createEl(vnode) {
+    var tag = vnode.tag,
+      children = vnode.children;
+      vnode.key;
+      vnode.data;
+      var text = vnode.text;
+    if (typeof tag === 'string') {
+      vnode.el = document.createElement(tag);
+      if (children.length > 0) {
+        children.forEach(function (child) {
+          vnode.el.appendChild(createEl(child));
+        });
+      }
+    } else {
+      vnode.el = document.createTextNode(text);
+    }
+    return vnode.el;
+  }
+
   function mountComponent(vm, el) {
     vm._update(vm._render());
   }
   function lifecycleMixin(Vue) {
     Vue.prototype._update = function (vnode) {
-      console.log(vnode);
       var vm = this;
       vm.$el = patch(vm.$el, vnode);
     };
