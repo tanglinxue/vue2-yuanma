@@ -129,6 +129,42 @@
     };
   });
 
+  var id$1 = 0;
+  var Dep = /*#__PURE__*/function () {
+    function Dep() {
+      _classCallCheck(this, Dep);
+      this.id = id$1++;
+      this.subs = [];
+    }
+    _createClass(Dep, [{
+      key: "depend",
+      value: function depend() {
+        Dep.target.addDep(this);
+      }
+    }, {
+      key: "addSub",
+      value: function addSub(watcher) {
+        this.subs.push(watcher);
+      }
+      //更新
+    }, {
+      key: "notify",
+      value: function notify() {
+        this.subs.forEach(function (watcher) {
+          watcher.updata();
+        });
+      }
+    }]);
+    return Dep;
+  }();
+  Dep.target = null;
+  function pushTarget(watcher) {
+    Dep.target = watcher;
+  }
+  function popTarget() {
+    Dep.target = null;
+  }
+
   function observer(data) {
     if (_typeof(data) != 'object' || data == null) {
       return data;
@@ -142,6 +178,7 @@
         enumerable: false,
         value: this
       });
+      this.dep = new Dep();
       //判断数据
       if (Array.isArray(value)) {
         value.__proto__ = ArrayMethods;
@@ -171,15 +208,25 @@
     return Observer;
   }();
   function defineReactive(data, key, value) {
-    observer(value);
+    var childDep = observer(value);
+    console.log(childDep);
+    //1给我们的每个属性添加一个dep
+    var dep = new Dep();
+    //2将dep 存放起来，当页面取值时，说明这个值用来渲染，在将这个watcher和这个属性对应起来
     Object.defineProperty(data, key, {
       get: function get() {
+        if (Dep.target) {
+          dep.depend();
+        }
+        console.log(dep);
+        // 收集依赖
         return value;
       },
       set: function set(newValue) {
         if (newValue === value) return;
         value = newValue;
         observer(value);
+        dep.notify();
       }
     });
   }
@@ -412,6 +459,7 @@
     var parentEl = oldVnode.parentNode;
     parentEl.insertBefore(el, oldVnode.nextsibling);
     parentEl.removeChild(oldVnode);
+    return el;
   }
   function createEl(vnode) {
     var tag = vnode.tag,
@@ -432,10 +480,57 @@
     return vnode.el;
   }
 
+  //为什么封装成一个类 ，方便我们的扩展
+  var id = 0; //全局的
+  var Watcher = /*#__PURE__*/function () {
+    function Watcher(vm, updataComponent, cb, options) {
+      _classCallCheck(this, Watcher);
+      this.vm = vm;
+      this.exprOrfn = updataComponent;
+      this.cb = cb;
+      this.options = options;
+      // 2. 每一组件只有一个watcher 他是为标识
+      this.id = id++;
+      this.deps = [];
+      this.depsId = new Set();
+      if (typeof updataComponent === 'function') {
+        this.getter = updataComponent;
+      }
+      this.get();
+    }
+    _createClass(Watcher, [{
+      key: "addDep",
+      value: function addDep(dep) {
+        var id = dep.id;
+        if (!this.depsId.has(id)) {
+          this.deps.push(dep);
+          this.depsId.add(id);
+          dep.addSub(this);
+        }
+      }
+    }, {
+      key: "get",
+      value: function get() {
+        pushTarget(this); //当前的实例添加
+        this.getter(); //渲染页面 vm._updata()
+        popTarget(); //删除当前的实例 这两个方法放在 dep 中
+      }
+    }, {
+      key: "updata",
+      value: function updata() {
+        this.getter();
+      }
+    }]);
+    return Watcher;
+  }();
+
   function mountComponent(vm, el) {
     //源码方式
     callHook(vm, 'beforeMount');
-    vm._update(vm._render());
+    var updataComponent = function updataComponent() {
+      vm._update(vm._render());
+    };
+    new Watcher(vm, updataComponent, function () {}, true);
     callHook(vm, 'mounted');
   }
   function lifecycleMixin(Vue) {
@@ -498,7 +593,6 @@
         options[key] = child[key];
       }
     }
-    console.log(options);
     return options;
   }
 
@@ -576,8 +670,6 @@
     // 源码当中 你所有定义的全局方法都是 放在
     Vue.options = {};
     Vue.mixin = function (mixin) {
-      console.log(this.options);
-      console.log(mixin);
       //实现合并 就是合并对象 （我先考虑生命周期）不考虑其他的合并 data,computed watch
       this.options = mergeOptions(this.options, mixin);
     };

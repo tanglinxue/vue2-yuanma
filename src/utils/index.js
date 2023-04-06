@@ -59,6 +59,5 @@ export function mergeOptions(parent,child){
           options[key] = child[key]
         }
     }
-    console.log(options)
     return options
 }

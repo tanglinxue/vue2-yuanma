@@ -1,5 +1,6 @@
 
 import { ArrayMethods } from './arr'
+import Dep  from './dep'
 export function observer(data) {
   if (typeof data != 'object' || data == null) {
     return data
@@ -13,6 +14,7 @@ class Observer {
       enumerable: false,
       value: this
     })
+    this.dep = new Dep()
     //判断数据
     if (Array.isArray(value)) {
       value.__proto__ = ArrayMethods
@@ -37,15 +39,25 @@ class Observer {
 }
 
 function defineReactive(data, key, value) {
-  observer(value);
+  let childDep = observer(value);
+  console.log(childDep)
+  //1给我们的每个属性添加一个dep
+  let dep = new Dep()
+  //2将dep 存放起来，当页面取值时，说明这个值用来渲染，在将这个watcher和这个属性对应起来
   Object.defineProperty(data, key, {
     get() {
+      if(Dep.target){
+        dep.depend()
+      }
+      console.log(dep)
+      // 收集依赖
       return value
     },
     set(newValue) {
       if (newValue === value) return;
       value = newValue
       observer(value);
+      dep.notify()
     }
   })
 }

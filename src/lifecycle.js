@@ -1,8 +1,15 @@
 import { patch } from "./vnode/patch";
+import Watcher from './observe/watcher'
 export function mountComponent(vm, el) {
   //源码方式
   callHook(vm,'beforeMount')
-  vm._update(vm._render())
+ 
+  let updataComponent = ()=>{
+    vm._update(vm._render())
+  }
+  new Watcher(vm,updataComponent,()=>{
+
+  },true)
   callHook(vm,'mounted')
 }
 
