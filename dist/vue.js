@@ -408,10 +408,7 @@
   }
 
   function patch(oldVnode, vnode) {
-    console.log(oldVnode);
-    console.log(vnode);
     var el = createEl(vnode);
-    console.log(el);
     var parentEl = oldVnode.parentNode;
     parentEl.insertBefore(el, oldVnode.nextsibling);
     parentEl.removeChild(oldVnode);
@@ -436,7 +433,10 @@
   }
 
   function mountComponent(vm, el) {
+    //源码方式
+    callHook(vm, 'beforeMount');
     vm._update(vm._render());
+    callHook(vm, 'mounted');
   }
   function lifecycleMixin(Vue) {
     Vue.prototype._update = function (vnode) {
@@ -444,12 +444,71 @@
       vm.$el = patch(vm.$el, vnode);
     };
   }
+  function callHook(vm, hook) {
+    var handlers = vm.$options[hook];
+    if (handlers) {
+      for (var i = 0; i < handlers.length; i++) {
+        handlers[i].call(vm);
+      }
+    }
+  }
+
+  var HOOKS = ["beforeCreate", "created", "beforeMount", "mounted", "beforeUpdate", "updated", "beforeDestory", "destroyed"];
+  // 策略模式
+  var starts = {};
+  starts.data = function (parentVal, childVal) {
+    return childVal;
+  };
+  starts.computed = function () {};
+  starts.watch = function () {};
+  starts.methods = function () {};
+  function mergeHook(parentVal, childVal) {
+    //生命周期的合并
+    if (childVal) {
+      if (parentVal) {
+        return parentVal.concat(childVal);
+      } else {
+        return [childVal];
+      }
+    } else {
+      return parentVal;
+    }
+  }
+  HOOKS.forEach(function (hooks) {
+    starts[hooks] = mergeHook;
+  });
+  function mergeOptions(parent, child) {
+    var options = {};
+    //遍历父亲：可能是父亲有，儿子没有
+    for (var key in parent) {
+      //父亲和儿子都有在这里进行处理
+      mergeField(key);
+    }
+    //儿子有父亲没有
+    for (var _key in child) {
+      //将儿子多的赋值到父亲上
+      if (!parent.hasOwnProperty(_key)) {
+        mergeField(_key);
+      }
+    }
+    function mergeField(key) {
+      if (starts[key]) {
+        options[key] = starts[key](parent[key], child[key]);
+      } else {
+        options[key] = child[key];
+      }
+    }
+    console.log(options);
+    return options;
+  }
 
   function initMixin(Vue) {
     Vue.prototype._init = function (options) {
       var vm = this;
-      vm.$options = options;
+      vm.$options = mergeOptions(Vue.options, options); // 需要将用户自定义的options 合并 谁和谁合并
+      callHook(vm, 'beforeCreated');
       initState(vm);
+      callHook(vm, 'created');
       if (vm.$options.el) {
         vm.$mount(vm.$options.el);
       }
@@ -467,7 +526,6 @@
           el = el.outerHTML;
           //变成ast语法树
           var render = compilrToFunction(el);
-          console.log(render);
           options.render = render;
         }
       }
@@ -514,12 +572,24 @@
     };
   }
 
+  function initGlobApi(Vue) {
+    // 源码当中 你所有定义的全局方法都是 放在
+    Vue.options = {};
+    Vue.mixin = function (mixin) {
+      console.log(this.options);
+      console.log(mixin);
+      //实现合并 就是合并对象 （我先考虑生命周期）不考虑其他的合并 data,computed watch
+      this.options = mergeOptions(this.options, mixin);
+    };
+  }
+
   function Vue(options) {
     this._init(options);
   }
   initMixin(Vue);
   lifecycleMixin(Vue);
   renderMixin(Vue);
+  initGlobApi(Vue);
 
   return Vue;
 

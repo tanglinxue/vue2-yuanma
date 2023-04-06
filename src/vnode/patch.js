@@ -1,8 +1,5 @@
 export function patch(oldVnode, vnode) {
-    console.log(oldVnode)
-    console.log(vnode)
     let el = createEl(vnode)
-    console.log(el)
     let parentEl = oldVnode.parentNode;
     parentEl.insertBefore(el, oldVnode.nextsibling)
     parentEl.removeChild(oldVnode)
