@@ -40,8 +40,8 @@ function proxy(vm,source,key){
 function initProps() {
 
 }
-function initWatch() {
-
+function initWatch(vm) {
+  consoel.log(vm.$options.watch)
 }
 function initComputed() {
 

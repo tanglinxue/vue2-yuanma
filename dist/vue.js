@@ -276,7 +276,9 @@
     if (opts.data) {
       initData(vm);
     }
-    if (opts.watch) ;
+    if (opts.watch) {
+      initWatch();
+    }
     if (opts.computed) ;
     if (opts.methods) ;
   }
@@ -297,6 +299,9 @@
         vm[source][key] = newValue;
       }
     });
+  }
+  function initWatch(vm) {
+    consoel.log(vm.$options.watch);
   }
   function stateMixin(Vue) {
     Vue.prototype.$nextTick = function (cb) {
