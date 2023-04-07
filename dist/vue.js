@@ -277,7 +277,7 @@
       initData(vm);
     }
     if (opts.watch) {
-      initWatch();
+      initWatch(vm);
     }
     if (opts.computed) ;
     if (opts.methods) ;
@@ -301,7 +301,7 @@
     });
   }
   function initWatch(vm) {
-    consoel.log(vm.$options.watch);
+    console.log(vm.$options.watch);
   }
   function stateMixin(Vue) {
     Vue.prototype.$nextTick = function (cb) {
@@ -638,9 +638,16 @@
   starts.data = function (parentVal, childVal) {
     return childVal;
   };
-  starts.computed = function () {};
-  starts.watch = function () {};
-  starts.methods = function () {};
+  // starts.computed = function(){
+
+  // }
+  // starts.watch = function(){
+
+  // }
+  // starts.methods = function(){
+
+  // }
+
   function mergeHook(parentVal, childVal) {
     //生命周期的合并
     if (childVal) {

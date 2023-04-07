@@ -9,7 +9,7 @@ export function initState(vm) {
         initData(vm)
     }
     if (opts.watch) {
-        initWatch()
+        initWatch(vm)
     }
     if (opts.computed) {
         initComputed()
@@ -41,7 +41,7 @@ function initProps() {
 
 }
 function initWatch(vm) {
-  consoel.log(vm.$options.watch)
+  console.log(vm.$options.watch)
 }
 function initComputed() {
 

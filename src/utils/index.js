@@ -14,15 +14,15 @@ let starts = {}
 starts.data = function(parentVal,childVal){
   return childVal
 }
-starts.computed = function(){
+// starts.computed = function(){
   
-}
-starts.watch = function(){
+// }
+// starts.watch = function(){
   
-}
-starts.methods = function(){
+// }
+// starts.methods = function(){
   
-}
+// }
 
 function mergeHook(parentVal,childVal){ //生命周期的合并
   if(childVal){
