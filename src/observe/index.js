@@ -3,7 +3,7 @@ import { ArrayMethods } from './arr'
 import Dep  from './dep'
 export function observer(data) {
   if (typeof data != 'object' || data == null) {
-    return data
+    return
   }
   return new Observer(data)
 }
@@ -40,16 +40,17 @@ class Observer {
 
 function defineReactive(data, key, value) {
   let childDep = observer(value);
-  console.log(childDep)
   //1给我们的每个属性添加一个dep
   let dep = new Dep()
   //2将dep 存放起来，当页面取值时，说明这个值用来渲染，在将这个watcher和这个属性对应起来
   Object.defineProperty(data, key, {
     get() {
-      if(Dep.target){
+      if(Dep.targer){
         dep.depend()
+        if(childDep){
+          childDep.dep.depend()
+        }
       }
-      console.log(dep)
       // 收集依赖
       return value
     },

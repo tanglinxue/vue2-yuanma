@@ -5,7 +5,7 @@ class Dep{
     this.subs = []
   }
   depend(){
-    Dep.target.addDep(this)
+    Dep.targer.addDep(this)
   }
   addSub(watcher){
     this.subs.push(watcher)
@@ -18,13 +18,13 @@ class Dep{
   }
 }
 
-Dep.target = null
+Dep.targer = null
 export function pushTarget(watcher){
-  Dep.target = watcher
+  Dep.targer = watcher
 }
 
 export function popTarget(){
-  Dep.target = null
+  Dep.targer = null
 }
 
 export default Dep

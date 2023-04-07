@@ -4,7 +4,6 @@ import {generate} from './generate'
 export function compilrToFunction(el){
   //1 将html 变成ast 语法树
   let ast = parseHTML(el)
-  console.log(ast)
    //2 ast 语法树变成 render 函数  （1） ast 语法树变成 字符串  （2）字符串变成函数 
   let code = generate(ast)
   let render = new Function(`with(this){return ${code}}`)

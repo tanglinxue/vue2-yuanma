@@ -125,6 +125,7 @@
       if (inserted) {
         ob.observeArray(inserted);
       }
+      ob.dep.notify();
       return result;
     };
   });
@@ -139,7 +140,7 @@
     _createClass(Dep, [{
       key: "depend",
       value: function depend() {
-        Dep.target.addDep(this);
+        Dep.targer.addDep(this);
       }
     }, {
       key: "addSub",
@@ -157,17 +158,17 @@
     }]);
     return Dep;
   }();
-  Dep.target = null;
+  Dep.targer = null;
   function pushTarget(watcher) {
-    Dep.target = watcher;
+    Dep.targer = watcher;
   }
   function popTarget() {
-    Dep.target = null;
+    Dep.targer = null;
   }
 
   function observer(data) {
     if (_typeof(data) != 'object' || data == null) {
-      return data;
+      return;
     }
     return new Observer(data);
   }
@@ -209,16 +210,17 @@
   }();
   function defineReactive(data, key, value) {
     var childDep = observer(value);
-    console.log(childDep);
     //1给我们的每个属性添加一个dep
     var dep = new Dep();
     //2将dep 存放起来，当页面取值时，说明这个值用来渲染，在将这个watcher和这个属性对应起来
     Object.defineProperty(data, key, {
       get: function get() {
-        if (Dep.target) {
+        if (Dep.targer) {
           dep.depend();
+          if (childDep) {
+            childDep.dep.depend();
+          }
         }
-        console.log(dep);
         // 收集依赖
         return value;
       },
@@ -229,6 +231,43 @@
         dep.notify();
       }
     });
+  }
+
+  var callback = [];
+  var pending$1 = false;
+  function flush() {
+    callback.forEach(function (cb) {
+      return cb();
+    });
+    pending$1 = false;
+  }
+  var timerFunc;
+  //处理兼容问题
+  if (Promise) {
+    timerFunc = function timerFunc() {
+      Promise.resolve().then(flush);
+    };
+  } else if (MutationObserver) {
+    //h5 异步方法 他可以监听 DOM 变化 ，监控完毕之后在来异步更新
+    var observe = new MutationObserver(flush);
+    var textNode = document.createTextNode(1);
+    observe.observe(textNode, {
+      characterData: true
+    });
+    timerFunc = function timerFunc() {
+      textNode.textContent = 2;
+    };
+  } else if (setImmediate) {
+    timerFunc = function timerFunc() {
+      setImmediate(flush);
+    };
+  }
+  function nextTick(cb) {
+    callback.push(cb);
+    if (!pending$1) {
+      timerFunc();
+      pending$1 = true;
+    }
   }
 
   function initState(vm) {
@@ -258,6 +297,11 @@
         vm[source][key] = newValue;
       }
     });
+  }
+  function stateMixin(Vue) {
+    Vue.prototype.$nextTick = function (cb) {
+      nextTick(cb);
+    };
   }
 
   var ncname = "[a-zA-Z_][\\-\\.0-9_a-zA-Z]*"; // 标签名称
@@ -447,7 +491,6 @@
   function compilrToFunction(el) {
     //1 将html 变成ast 语法树
     var ast = parseHTML(el);
-    console.log(ast);
     //2 ast 语法树变成 render 函数  （1） ast 语法树变成 字符串  （2）字符串变成函数 
     var code = generate(ast);
     var render = new Function("with(this){return ".concat(code, "}"));
@@ -509,6 +552,11 @@
         }
       }
     }, {
+      key: "run",
+      value: function run() {
+        this.get();
+      }
+    }, {
       key: "get",
       value: function get() {
         pushTarget(this); //当前的实例添加
@@ -518,11 +566,39 @@
     }, {
       key: "updata",
       value: function updata() {
-        this.getter();
+        //this.getter()
+        queueWatcher(this);
       }
     }]);
     return Watcher;
   }();
+  var queue = [];
+  var has = {};
+  var pending = false;
+  function flushWatcher() {
+    queue.forEach(function (item) {
+      item.run();
+      item.cb();
+    });
+    queue = [];
+    has = {};
+    pending = false;
+  }
+  function queueWatcher(watcher) {
+    var id = watcher.id;
+    if (has[id] == null) {
+      has[id] = true;
+      queue.push(watcher);
+      if (!pending) {
+        nextTick(flushWatcher);
+      }
+      pending = true;
+    }
+  }
+
+  //nextTick 原理
+
+  //优化
 
   function mountComponent(vm, el) {
     //源码方式
@@ -530,11 +606,14 @@
     var updataComponent = function updataComponent() {
       vm._update(vm._render());
     };
-    new Watcher(vm, updataComponent, function () {}, true);
+    new Watcher(vm, updataComponent, function () {
+      callHook(vm, 'updated');
+    }, true);
     callHook(vm, 'mounted');
   }
   function lifecycleMixin(Vue) {
     Vue.prototype._update = function (vnode) {
+      console.log(vnode);
       var vm = this;
       vm.$el = patch(vm.$el, vnode);
     };
@@ -681,6 +760,7 @@
   initMixin(Vue);
   lifecycleMixin(Vue);
   renderMixin(Vue);
+  stateMixin(Vue);
   initGlobApi(Vue);
 
   return Vue;
