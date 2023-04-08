@@ -31,6 +31,27 @@
       return _arr;
     }
   }
+  function ownKeys(object, enumerableOnly) {
+    var keys = Object.keys(object);
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      enumerableOnly && (symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      })), keys.push.apply(keys, symbols);
+    }
+    return keys;
+  }
+  function _objectSpread2(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = null != arguments[i] ? arguments[i] : {};
+      i % 2 ? ownKeys(Object(source), !0).forEach(function (key) {
+        _defineProperty(target, key, source[key]);
+      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) {
+        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+      });
+    }
+    return target;
+  }
   function _typeof(obj) {
     "@babel/helpers - typeof";
 
@@ -61,6 +82,20 @@
       writable: false
     });
     return Constructor;
+  }
+  function _defineProperty(obj, key, value) {
+    key = _toPropertyKey(key);
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+    return obj;
   }
   function _slicedToArray(arr, i) {
     return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
@@ -301,11 +336,47 @@
     });
   }
   function initWatch(vm) {
-    console.log(vm.$options.watch);
+    var watch = vm.$options.watch;
+    var _loop = function _loop(key) {
+      var handler = watch[key];
+      if (Array.isArray(handler)) {
+        handler.forEach(function (item) {
+          createWatcher(vm, key, item);
+        });
+      } else {
+        createWatcher(vm, key, handler);
+      }
+    };
+    for (var key in watch) {
+      _loop(key);
+    }
+  }
+  function createWatcher(vm, exprOrfn, handler, options) {
+    if (_typeof(handler) === 'object') {
+      options = handler; //用户的配置项目
+      handler = handler.handler; //这个是一个函数
+    }
+
+    if (typeof handler === 'string') {
+      handler = vm[handler]; //将实例行的方法作为 handler 方法代理和data 一样
+    }
+
+    return vm.$watch(vm, exprOrfn, handler, options);
   }
   function stateMixin(Vue) {
+    //列队 :1就是vue自己的nextTick  2用户自己的
     Vue.prototype.$nextTick = function (cb) {
+      //nextTick: 数据更新之后获取到最新的DOM
       nextTick(cb);
+    };
+    vm.prototype.$watch = function (Vue, exprOrfn, handler) {
+      var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+      new Watcher(Vue, exprOrfn, handler, _objectSpread2(_objectSpread2({}, options), {}, {
+        user: true
+      }));
+      if (options.immediate) {
+        handler.call(Vue);
+      }
     };
   }
 
@@ -530,7 +601,7 @@
 
   //为什么封装成一个类 ，方便我们的扩展
   var id = 0; //全局的
-  var Watcher = /*#__PURE__*/function () {
+  var Watcher$1 = /*#__PURE__*/function () {
     function Watcher(vm, updataComponent, cb, options) {
       _classCallCheck(this, Watcher);
       this.vm = vm;
@@ -611,7 +682,7 @@
     var updataComponent = function updataComponent() {
       vm._update(vm._render());
     };
-    new Watcher(vm, updataComponent, function () {
+    new Watcher$1(vm, updataComponent, function () {
       callHook(vm, 'updated');
     }, true);
     callHook(vm, 'mounted');
