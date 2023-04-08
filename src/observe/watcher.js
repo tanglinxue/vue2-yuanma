@@ -4,17 +4,26 @@ import {nextTick} from '../utils/nextTick.js'
 //为什么封装成一个类 ，方便我们的扩展
 let id = 0; //全局的
 class Watcher{
-  constructor(vm,updataComponent,cb,options){
+  constructor(vm,exprOrfn,cb,options){
     this.vm = vm;
-    this.exprOrfn = updataComponent;
+    this.exprOrfn = exprOrfn;
     this.cb = cb;
     this.options = options;
      // 2. 每一组件只有一个watcher 他是为标识
     this.id = id++
     this.deps = []
     this.depsId = new Set()
-    if(typeof updataComponent === 'function'){
-      this.getter = updataComponent
+    if(typeof exprOrfn === 'function'){
+      this.getter = exprOrfn
+    }else{
+      this.getter = function(){
+        let path = exprOrfn.split('.')
+        let obj = vm;
+        for(let i=0;i<path.length;i++){
+          obj = obj[path[i]]
+        }
+        return obj
+      }
     }
     this.get()
   }
