@@ -1,5 +1,6 @@
 import { observer } from './observe/index'
 import {nextTick} from './utils/nextTick'
+import Watcher from './observe/watcher'
 export function initState(vm) {
     let opts = vm.$options;
     if (opts.props) {
@@ -52,7 +53,7 @@ function initWatch(vm) {
       createWatcher(vm,key,handler) 
     }
   }
-
+  return vm.$watch(vm,exprOrfn,hander,options)
 }
 function createWatcher(vm,exprOrfn,handler,options){
   if(typeof handler==='object'){
@@ -70,9 +71,9 @@ function initComputed() {
 function initMethods(vm) {
 
 }
-export function stateMixin(Vue){
+export function stateMixin(vm){
   //列队 :1就是vue自己的nextTick  2用户自己的
-  Vue.prototype.$nextTick = function(cb){//nextTick: 数据更新之后获取到最新的DOM
+  vm.prototype.$nextTick = function(cb){//nextTick: 数据更新之后获取到最新的DOM
     nextTick(cb)
   }
   vm.prototype.$watch=function(Vue,exprOrfn,handler,options={}){

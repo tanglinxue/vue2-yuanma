@@ -305,6 +305,92 @@
     }
   }
 
+  //为什么封装成一个类 ，方便我们的扩展
+  var id = 0; //全局的
+  var Watcher = /*#__PURE__*/function () {
+    function Watcher(vm, exprOrfn, cb, options) {
+      _classCallCheck(this, Watcher);
+      this.vm = vm;
+      this.exprOrfn = exprOrfn;
+      this.cb = cb;
+      this.options = options;
+      // 2. 每一组件只有一个watcher 他是为标识
+      this.id = id++;
+      this.deps = [];
+      this.depsId = new Set();
+      if (typeof exprOrfn === 'function') {
+        this.getter = exprOrfn;
+      } else {
+        this.getter = function () {
+          var path = exprOrfn.split('.');
+          var obj = vm;
+          for (var i = 0; i < path.length; i++) {
+            obj = obj[path[i]];
+          }
+          return obj;
+        };
+      }
+      this.get();
+    }
+    _createClass(Watcher, [{
+      key: "addDep",
+      value: function addDep(dep) {
+        var id = dep.id;
+        if (!this.depsId.has(id)) {
+          this.deps.push(dep);
+          this.depsId.add(id);
+          dep.addSub(this);
+        }
+      }
+    }, {
+      key: "run",
+      value: function run() {
+        this.get();
+      }
+    }, {
+      key: "get",
+      value: function get() {
+        pushTarget(this); //当前的实例添加
+        this.getter(); //渲染页面 vm._updata()
+        popTarget(); //删除当前的实例 这两个方法放在 dep 中
+      }
+    }, {
+      key: "updata",
+      value: function updata() {
+        //this.getter()
+        queueWatcher(this);
+      }
+    }]);
+    return Watcher;
+  }();
+  var queue = [];
+  var has = {};
+  var pending = false;
+  function flushWatcher() {
+    queue.forEach(function (item) {
+      item.run();
+      item.cb();
+    });
+    queue = [];
+    has = {};
+    pending = false;
+  }
+  function queueWatcher(watcher) {
+    var id = watcher.id;
+    if (has[id] == null) {
+      has[id] = true;
+      queue.push(watcher);
+      if (!pending) {
+        nextTick(flushWatcher);
+      }
+      pending = true;
+    }
+  }
+
+  //nextTick 原理
+
+  //优化
+
   function initState(vm) {
     var opts = vm.$options;
     if (opts.props) ;
@@ -350,6 +436,7 @@
     for (var key in watch) {
       _loop(key);
     }
+    return vm.$watch(vm, exprOrfn, hander, options);
   }
   function createWatcher(vm, exprOrfn, handler, options) {
     if (_typeof(handler) === 'object') {
@@ -363,9 +450,9 @@
 
     return vm.$watch(vm, exprOrfn, handler, options);
   }
-  function stateMixin(Vue) {
+  function stateMixin(vm) {
     //列队 :1就是vue自己的nextTick  2用户自己的
-    Vue.prototype.$nextTick = function (cb) {
+    vm.prototype.$nextTick = function (cb) {
       //nextTick: 数据更新之后获取到最新的DOM
       nextTick(cb);
     };
@@ -599,99 +686,13 @@
     return vnode.el;
   }
 
-  //为什么封装成一个类 ，方便我们的扩展
-  var id = 0; //全局的
-  var Watcher$1 = /*#__PURE__*/function () {
-    function Watcher(vm, exprOrfn, cb, options) {
-      _classCallCheck(this, Watcher);
-      this.vm = vm;
-      this.exprOrfn = exprOrfn;
-      this.cb = cb;
-      this.options = options;
-      // 2. 每一组件只有一个watcher 他是为标识
-      this.id = id++;
-      this.deps = [];
-      this.depsId = new Set();
-      if (typeof exprOrfn === 'function') {
-        this.getter = exprOrfn;
-      } else {
-        this.getter = function () {
-          var path = exprOrfn.split('.');
-          var obj = vm;
-          for (var i = 0; i < path.length; i++) {
-            obj = obj[path[i]];
-          }
-          return obj;
-        };
-      }
-      this.get();
-    }
-    _createClass(Watcher, [{
-      key: "addDep",
-      value: function addDep(dep) {
-        var id = dep.id;
-        if (!this.depsId.has(id)) {
-          this.deps.push(dep);
-          this.depsId.add(id);
-          dep.addSub(this);
-        }
-      }
-    }, {
-      key: "run",
-      value: function run() {
-        this.get();
-      }
-    }, {
-      key: "get",
-      value: function get() {
-        pushTarget(this); //当前的实例添加
-        this.getter(); //渲染页面 vm._updata()
-        popTarget(); //删除当前的实例 这两个方法放在 dep 中
-      }
-    }, {
-      key: "updata",
-      value: function updata() {
-        //this.getter()
-        queueWatcher(this);
-      }
-    }]);
-    return Watcher;
-  }();
-  var queue = [];
-  var has = {};
-  var pending = false;
-  function flushWatcher() {
-    queue.forEach(function (item) {
-      item.run();
-      item.cb();
-    });
-    queue = [];
-    has = {};
-    pending = false;
-  }
-  function queueWatcher(watcher) {
-    var id = watcher.id;
-    if (has[id] == null) {
-      has[id] = true;
-      queue.push(watcher);
-      if (!pending) {
-        nextTick(flushWatcher);
-      }
-      pending = true;
-    }
-  }
-
-  //nextTick 原理
-
-  //优化
-
   function mountComponent(vm, el) {
     //源码方式
     callHook(vm, 'beforeMount');
     var updataComponent = function updataComponent() {
       vm._update(vm._render());
     };
-    new Watcher$1(vm, updataComponent, function () {
+    new Watcher(vm, updataComponent, function () {
       callHook(vm, 'updated');
     }, true);
     callHook(vm, 'mounted');
