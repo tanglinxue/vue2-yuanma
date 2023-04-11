@@ -11,7 +11,8 @@ class Watcher{
     this.options = options;
      // 2. 每一组件只有一个watcher 他是为标识
     this.id = id++
-    this.deps = []
+    this.user=!!options.user;
+    this.deps = []  //watcher 记录有多少dep 依赖
     this.depsId = new Set()
     if(typeof exprOrfn === 'function'){
       this.getter = exprOrfn
@@ -25,9 +26,10 @@ class Watcher{
         return obj
       }
     }
-    this.get()
+   this.value = this.get()
   }
   addDep(dep){
+    //去重  判断一下 如果dep 相同我们是不用去处理的
     let id = dep.id;
     if(!this.depsId.has(id)){
       this.deps.push(dep)
@@ -36,12 +38,20 @@ class Watcher{
     }
   }
   run(){
-    this.get()
+    let value = this.get()
+    let oldValue = this.value
+    this.value = value;
+    if(this.user){
+      this.cb.call(this.vm,value,oldValue)
+    }
   }
   get(){
     pushTarget(this)//当前的实例添加
-    this.getter()  //渲染页面 vm._updata()
+    const value = this.getter()  //渲染页面 vm._updata()
+    
+    console.log(value)
     popTarget() //删除当前的实例 这两个方法放在 dep 中
+    return value
   }
   updata(){
     

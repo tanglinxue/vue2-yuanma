@@ -316,7 +316,8 @@
       this.options = options;
       // 2. 每一组件只有一个watcher 他是为标识
       this.id = id++;
-      this.deps = [];
+      this.user = !!options.user;
+      this.deps = []; //watcher 记录有多少dep 依赖
       this.depsId = new Set();
       if (typeof exprOrfn === 'function') {
         this.getter = exprOrfn;
@@ -330,11 +331,12 @@
           return obj;
         };
       }
-      this.get();
+      this.value = this.get();
     }
     _createClass(Watcher, [{
       key: "addDep",
       value: function addDep(dep) {
+        //去重  判断一下 如果dep 相同我们是不用去处理的
         var id = dep.id;
         if (!this.depsId.has(id)) {
           this.deps.push(dep);
@@ -345,14 +347,22 @@
     }, {
       key: "run",
       value: function run() {
-        this.get();
+        var value = this.get();
+        var oldValue = this.value;
+        this.value = value;
+        if (this.user) {
+          this.cb.call(this.vm, value, oldValue);
+        }
       }
     }, {
       key: "get",
       value: function get() {
         pushTarget(this); //当前的实例添加
-        this.getter(); //渲染页面 vm._updata()
+        var value = this.getter(); //渲染页面 vm._updata()
+
+        console.log(value);
         popTarget(); //删除当前的实例 这两个方法放在 dep 中
+        return value;
       }
     }, {
       key: "updata",
@@ -422,6 +432,7 @@
     });
   }
   function initWatch(vm) {
+    //1 获取watch
     var watch = vm.$options.watch;
     var _loop = function _loop(key) {
       var handler = watch[key];
@@ -436,7 +447,6 @@
     for (var key in watch) {
       _loop(key);
     }
-    return vm.$watch(vm, exprOrfn, hander, options);
   }
   function createWatcher(vm, exprOrfn, handler, options) {
     if (_typeof(handler) === 'object') {
@@ -450,19 +460,19 @@
 
     return vm.$watch(vm, exprOrfn, handler, options);
   }
-  function stateMixin(vm) {
+  function stateMixin(Vue) {
     //列队 :1就是vue自己的nextTick  2用户自己的
-    vm.prototype.$nextTick = function (cb) {
+    Vue.prototype.$nextTick = function (cb) {
       //nextTick: 数据更新之后获取到最新的DOM
       nextTick(cb);
     };
-    vm.prototype.$watch = function (Vue, exprOrfn, handler) {
+    Vue.prototype.$watch = function (vm, exprOrfn, handler) {
       var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
-      new Watcher(Vue, exprOrfn, handler, _objectSpread2(_objectSpread2({}, options), {}, {
+      new Watcher(vm, exprOrfn, handler, _objectSpread2(_objectSpread2({}, options), {}, {
         user: true
       }));
       if (options.immediate) {
-        handler.call(Vue);
+        handler.call(vm);
       }
     };
   }

@@ -9,7 +9,7 @@
 </head>
 
 <body>
-  <div id="app" style="color:red;font-size:20px"> {{msg}}{{name}} <h2>{{list}}</h2>{{a}}</div>
+  <div id="app" style="color:red;font-size:20px"> {{msg}}{{name}} <h2>{{list}}</h2>{{a}}{{c.c.c}}</div>
   <script src="dist/vue.js"></script>
   <script>
     //umd  Vue
@@ -48,7 +48,9 @@
             c: {
               c: 100
             }
-          }
+          },
+          b:6,
+          d:7
         }
       },
       created() {
@@ -69,17 +71,17 @@
             console.log(newValue)
           },
         ],
-        // a: {
-        //   handler() { //
-        //     console.log('xxx100')
-        //   },
-        //   immediate: true
+        b: {
+          handler() { //
+            console.log('xxx100')
+          },
+          immediate: true
 
-        // },
-        //a: 'aa'
+        },
+        d: 'cc'
       },
       methods: {
-        aa() {
+        cc() {
           console.log(2000)
         }
       },
@@ -87,8 +89,10 @@
     //console.log(vm)
     //vue初次渲染  =》先初始化数据 =》将模板进行编译=》变成render()=>生成虚拟节点=》变成真实DOM =>放到页面上
     //vue 模板编译  template render el 注意：el(必须要有) render()  template
-    vm.a = 100
-    console.log(vm.c.c.c = 2000)
+    //vm.a = 100
+    console.log(setTimeout(()=>{
+      vm.c.c.c = 3000
+    },1000))
   </script>
 </body>
 
