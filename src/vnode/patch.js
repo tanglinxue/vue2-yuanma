@@ -6,7 +6,7 @@ export function patch(oldVnode, vnode) {
     return el
 }
 
-function createEl(vnode) {
+export function createEl(vnode) {
     let { tag, children, key, data, text } = vnode;
     if (typeof tag === 'string') {
         vnode.el = document.createElement(tag)
